@@ -1,0 +1,21 @@
+name = "TreeMultiPatch"
+uuid = "7cd1219e-1b18-4d4d-a931-ceef91256e6d"
+version = "0.1.0"
+authors = ["Erik Schnetter <schnetter@gmail.com>"]
+
+[deps]
+TreeAMR = "91bc416d-811c-44c1-9bc4-b9c8bbdbbd08"
+
+[weakdeps]
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+MultiFloats = "bdf0d083-296b-4888-a5b6-7498122e68a5"
+
+[extensions]
+TreeMultiPatchForwardDiffExt = "ForwardDiff"
+TreeMultiPatchMultiFloatsExt = "MultiFloats"
+
+[compat]
+ForwardDiff = "1"
+MultiFloats = "3.3.2"
+TreeAMR = "0.2"
+julia = "1.13"
