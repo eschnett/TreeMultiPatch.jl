@@ -8,6 +8,7 @@
 - [The atlas](#the-atlas)
 - [Milestones](#milestones)
   - [M1 — The layouts, their maps and atlases](#m1--the-layouts-their-maps-and-atlases)
+  - [M21 — Symmetric balls (TreeAMR's M21 step 5)](#m21--symmetric-balls-treeamrs-m21-step-5)
 
 ## Origin
 
@@ -103,3 +104,23 @@ edges and corners, and past the boxes; every declared alignment holds to
 integrates to each volume to 1e-12; each forest builds, uniform and
 refined, and passes its check; the maps run in a kernel on the CPU and,
 in `Float32`, on Metal (Metal 1.12.1). The suite takes about 35 s.
+
+### M21 — Symmetric balls (TreeAMR's M21 step 5)
+
+2026-11-25. `SymmetricBall`, built by the balls' `symmetry` keyword:
+seven reductions of both balls, as sub-boxes of the full ball's patches
+with the full maps, mirror faces at the mirror cuts and turned glue at
+the turns' seams, derived from the maps. Starting it showed that a point
+in a removed shell's wedge lies past no kept patch's cut within reach of
+its map, so the logical fold of TreeAMR's design could not reach it; Erik
+widened TreeAMR's atlas contract so that `chart_locate` may return the
+image's position with the symmetry, which this atlas does for every
+point. Measured, for every symmetry of the graded seven-patch and the
+thirteen-patch ball: glued faces one surface, or the turn's image, to
+1e-12; every point of the full ball folded and carried back to 1e-12; the
+kept share of the volume to 1e-11 relative (8 Gauss points per root left
+7e-11 on the graded ball, 12 as `volume_tests.jl` uses); TreeAMR's
+interpolated ghosts on the reduced seven-patch ball equal to the full
+ball's to 1e-12. The suite, 111,456 assertions with these, against
+TreeAMR's M21 checkout.
+

@@ -41,6 +41,11 @@ properties a scheme asks for (`affine_patch`, `affine_map`,
 type (Float32 on a device, `Float64x2`, `BigFloat`, ForwardDiff's duals)
 and defined past each patch's box, where a ghost across a glue sits.
 
+Each ball also comes reduced by a symmetry, `symmetry = :octant` and the
+like — mirror planes through the axes and turns about `z` by 90° and 180°,
+for a spinning black hole at the centre — as a `SymmetricBall` whose atlas
+folds every point of the full ball (TreeAMR's M21).
+
 ## Installation
 
 The package is not registered yet. Add it from GitHub:

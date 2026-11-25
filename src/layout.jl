@@ -141,8 +141,13 @@ function layout_forest(::Type{T}, layout::PatchLayout; N, kwargs...) where {T}
     haskey(kwargs, :extents) && throw(ArgumentError(
         "every patch of $(layout_name(layout)) has the logical box [0, n] of its roots, " *
         "which its map is written for; pass no extents"))
-    return Forest{T}(layout_patches(layout); N=N, glue=layout_glue(layout), kwargs...)
+    return Forest{T}(layout_patches(layout); N=N, glue=layout_glue(layout),
+                     forest_keywords(layout)..., kwargs...)
 end
+
+# The forest keywords a layout fixes beside its patches and glue: a
+# symmetric ball's turn (`SymmetricBall`), none otherwise.
+forest_keywords(::PatchLayout) = (;)
 
 # The point of patch `q` that logical `ξ` of patch `p` lands on under the
 # glue entry `g` from `p`'s face `(d, side)`: along the normal, a point

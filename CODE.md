@@ -13,6 +13,7 @@ maps and atlases are implemented and tested, on the CPU and on Metal: step
   - [The annulus](#the-annulus)
   - [The balls](#the-balls)
   - [Shell orientation](#shell-orientation)
+  - [Symmetric balls](#symmetric-balls)
 - [The maps](#the-maps)
   - [Number types](#number-types)
   - [Past the box](#past-the-box)
@@ -54,6 +55,7 @@ under [Number types](#number-types).
 | `src/layout.jl` | `PatchLayout`, `chart_aligned`, `layout_forest`, `check_layout`, the glue's point map, the frame from the Jacobian, `logical_speed`, the patch properties' defaults |
 | `src/annulus.jl` | `PolarAnnulus` |
 | `src/balls.jl` | `SevenPatchBall`, `ThirteenPatchBall`: the cube, the blended and the outer shells, their glue |
+| `src/symmetric.jl` | `SymmetricBall`: a ball reduced by mirrors and turns about `z`, its faces, turned glue and folding atlas |
 | `ext/TreeMultiPatchMultiFloatsExt.jl` | `sin`, `cos`, `atan` for MultiFloats' numbers |
 | `ext/TreeMultiPatchForwardDiffExt.jl` | the same for ForwardDiff's duals over any number |
 
@@ -166,6 +168,50 @@ identity; and within each layer the quarter turns, shell `(k, s)`'s face
 the same side and `+k` otherwise, and the third axis onto itself. The
 balls have patch corners at the cube's edges and corners, and the
 thirteen-patch ball patch edges along the middle sphere.
+
+### Symmetric balls
+
+`SevenPatchBall(…; symmetry)` and `ThirteenPatchBall(…; symmetry)` give
+the ball reduced by a symmetry (TreeAMR's M21, "Symmetries on patches"
+in its `CODE.md`): `:bitant`, `:quadrant` and `:octant`, the mirror
+planes `z = 0`, `x = y = 0` and all three; `:quarter` and `:half`, the
+turns about `z` by 90° and 180°; `:quarter_bitant` and `:half_bitant`,
+the turns with the mirror `z = 0`. The layout declares the symmetry and
+the forest records what it means, the decision TreeAMR's design took.
+
+A `SymmetricBall` keeps the part of the ball on the positive side of
+each mirror plane and of each turn's cut (`x, y ≥ 0` for the quarter
+turn, `x ≥ 0` for the half turn): every patch but the shells over a
+cut-away face, each cut at the mid-planes of its tangential axes (or the
+cube's) that a cut crosses. A reduced patch names its patch of the full
+ball and the offset of its box there, so its own box starts at 0 and its
+maps are the full ball's at the offset; since every shell's tangential
+axes run along `+x_j`, keeping the positive side makes every cut a **low**
+face, as TreeAMR's design asks. The cube's roots `n` must be even.
+
+- A mirror cut is a patch's own mirror face, labelled by the axis its
+  plane is normal to — a shell's tangential axis `j` is `x_j`, so the
+  label is the axis.
+- A turn's cut is a seam, glued by a turned entry. Its partner, axis map
+  and turn are derived from the maps (`turned_entry`): a point just past
+  the cut is folded into the reduced ball, which names the face across
+  and the turn, and steps along each axis name the axes across; the
+  forest test holds every glued face as the turn's image of the face
+  across. The cube's and the `z` shells' seams join a patch to itself;
+  the quarter turn joins the `+x` and `+y` shells, the half turn the
+  `±y` shells. `layout_forest` declares the turn's plane `(1, 2)`
+  (`forest_keywords`).
+- The other faces keep the full ball's glue.
+
+`chart_locate` folds any point of the full ball: it mirrors the
+negative coordinates of the mirrored axes and turns the point into the
+turn's cut (`fold_physical`), locates the image in the full ball, and
+returns its position in the reduced patch with the symmetry that
+carries it back, `(mirrors, turn)` — the form of TreeAMR's contract
+that Erik widened, since a point in a removed shell's wedge lies past
+no kept patch's cut within its map's reach. Everything else at a point
+delegates to the full ball at the offset; `chart_aligned` is the full
+ball's between the full patches.
 
 ### Shell orientation
 
@@ -376,6 +422,7 @@ half a root past a box, and Gauss–Legendre quadrature.
 | `atlas_tests.jl` | `chart_locate` inverts `chart_map` inside, on faces, edges and corners, and past the boxes; a point just past a glued face is in the patch the glue names; outside points are `nothing`; every declared alignment to 1e-12 of a spacing at the ghosts three spacings past each box, at 6 and 8 points per root, vertex- and cell-centered, every declared pair reached; an undeclared coordinate off the nodes somewhere; the declarations named in TreeAMR's plan; `chart_aligned` is TreeAMR's |
 | `forest_tests.jl` | each forest builds, uniform and refined, and passes its check; keywords pass through, `glue` and `extents` refused; the check refuses other layouts, roots, a cut ring and TreeWaveOLDG's inward glue, at the root level and refined; a glued face is one surface under both maps; the outer boundary is the outermost shells' high faces |
 | `volume_tests.jl` | `√g` integrates to `π(r1² − r0²)` and `4πR³/3` to 1e-13 and 1e-12, the cube to `(2Lc)³`, each layer's shells alike |
+| `symmetric_tests.jl` | every symmetry of the graded seven-patch and the thirteen-patch ball: the forest builds and passes its check, with its patches, mirror labels and turn; every glued face one surface, or a turned one the turn's image of the face across, to 1e-12; every point of the full ball, the removed shells' wedges included, folded into a kept box and carried back by the reported symmetry, to 1e-12; `√g` integrating to the kept share of the volume; plain bits and concrete types; and TreeAMR's interpolated ghosts on the reduced seven-patch ball equal to the full ball's to 1e-12 |
 | `device_tests.jl` | every map, `chart_locate` included, in a KernelAbstractions kernel against the host; every map infers a concrete type in `Float32` |
 
 The kernel test runs on Metal in `Float32` (to 1e-4 of the `Float64`

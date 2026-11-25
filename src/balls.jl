@@ -211,9 +211,11 @@ SevenPatchBall{T}(Lc, R1, roots; grading=0) where {T} =
     SevenPatchBall{T}(Lc, R1, Tuple(roots); grading=grading)
 SevenPatchBall{T}(b::SevenPatchBall) where {T} =
     SevenPatchBall{T}(b.Lc, b.R1, b.roots; grading=b.grading)
-SevenPatchBall(Lc, R1, roots; grading=0) =
-    SevenPatchBall{float(promote_type(typeof(Lc), typeof(R1)))}(Lc, R1, roots;
-                                                                grading=grading)
+function SevenPatchBall(Lc, R1, roots; grading=0, symmetry=nothing)
+    b = SevenPatchBall{float(promote_type(typeof(Lc), typeof(R1)))}(Lc, R1, roots;
+                                                                    grading=grading)
+    return symmetry === nothing ? b : symmetric(b, symmetry)
+end
 
 """
     ThirteenPatchBall{T}(Lc, Rm, R1, roots)
@@ -282,9 +284,11 @@ function ThirteenPatchBall{T}(Lc, Rm, R1, roots) where {T}
 end
 ThirteenPatchBall{T}(b::ThirteenPatchBall) where {T} =
     ThirteenPatchBall{T}(b.Lc, b.Rm, b.R1, b.roots)
-ThirteenPatchBall(Lc, Rm, R1, roots) =
-    ThirteenPatchBall{float(promote_type(typeof(Lc), typeof(Rm), typeof(R1)))}(
+function ThirteenPatchBall(Lc, Rm, R1, roots; symmetry=nothing)
+    b = ThirteenPatchBall{float(promote_type(typeof(Lc), typeof(Rm), typeof(R1)))}(
         Lc, Rm, R1, roots)
+    return symmetry === nothing ? b : symmetric(b, symmetry)
+end
 
 const Ball{T} = Union{SevenPatchBall{T},ThirteenPatchBall{T}}
 

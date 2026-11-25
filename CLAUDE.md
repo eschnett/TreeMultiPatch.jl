@@ -71,7 +71,10 @@ TREEMULTIPATCH_TEST_BACKEND=metal julia --project=<env> test/runtests.jl device_
 ## Repository facts
 
 - Remote: `github.com/eschnett/TreeMultiPatch.jl`, branch `main`.
-  Unregistered; registering is Erik's (M3 in `PLAN.md`).
+  Unregistered; registering is Erik's (M3 in `PLAN.md`). On the branch
+  `eschnett-claude/m21-symmetric-layouts` `Project.toml` and
+  `test/Project.toml` take TreeAMR from its M21 checkout through
+  `[sources]`, until TreeAMR releases M21.
 - CI (`.github/workflows/CI.yml`) tests on Julia 1.13 in the two tiers
   of every Tree* repository: a pull request runs the Linux cells only,
   serial and at four threads, without coverage; macOS and coverage

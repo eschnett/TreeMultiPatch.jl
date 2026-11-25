@@ -2,7 +2,7 @@
 # single one can be run as `julia --project=test test/runtests.jl
 # atlas_tests`.
 
-const TEST_FILES = ["map_tests", "atlas_tests", "forest_tests", "volume_tests",
+const TEST_FILES = ["map_tests", "atlas_tests", "forest_tests", "volume_tests", "symmetric_tests",
                     "device_tests"]
 
 include(joinpath(@__DIR__, "helpers", "layouts.jl"))

@@ -24,7 +24,7 @@ using TreeAMR
 using TreeAMR: Forest, block_extent, neighbor_keys, patch
 
 # The layouts
-export PatchLayout, PolarAnnulus, SevenPatchBall, ThirteenPatchBall
+export PatchLayout, PolarAnnulus, SevenPatchBall, ThirteenPatchBall, SymmetricBall
 
 # Forests
 export layout_forest, check_layout, layout_patches, layout_glue
@@ -42,5 +42,6 @@ export chart_aligned
 include("layout.jl")
 include("annulus.jl")
 include("balls.jl")
+include("symmetric.jl")
 
 end # module TreeMultiPatch
