@@ -14,6 +14,7 @@ maps and atlases are implemented and tested, on the CPU and on Metal: step
   - [The balls](#the-balls)
   - [Shell orientation](#shell-orientation)
   - [Symmetric balls](#symmetric-balls)
+  - [Ties between shells](#ties-between-shells)
 - [The maps](#the-maps)
   - [Number types](#number-types)
   - [Past the box](#past-the-box)
@@ -211,7 +212,48 @@ carries it back, `(mirrors, turn)` — the form of TreeAMR's contract
 that Erik widened, since a point in a removed shell's wedge lies past
 no kept patch's cut within its map's reach. Everything else at a point
 delegates to the full ball at the offset; `chart_aligned` is the full
-ball's between the full patches.
+ball's between the full patches. `full` is the ball a run of the reduced
+one is the restriction of, so its rule for ties between shells is one
+the symmetry keeps (next section).
+
+### Ties between shells
+
+A point on the plane `|x| = |y|` outside the cube lies on the face
+between the `x` and the `y` shell, and `chart_locate` must name one.
+TreeAMR interpolates a ghost there from the shell named, and the two
+shells' copies of their common face, each evolved by its own patch
+under closed ownership (TreeAMR's M20), differ by the truncation error;
+the shells' diagonal corner ghosts lie exactly on such ties. So the
+discretization has exactly the symmetries of the tie rule, and no rule
+keeps all of the ball's: the mirror `x ↔ y` fixes the plane and swaps
+the two shells. The balls take `ties`:
+
+- `:mirror`, the default: the `x` shell. It commutes with the mirrors of
+  `x`, `y` and `z` and so with the point inversion, but not with the
+  quarter turn about `z`, which takes the `x` shell's ties onto the `y`
+  shell's. Measured on the seven-patch ball `(2, 1)` at `N = 8` (TreeWave's
+  M21 runs): random data and its quarter-turned image evolved apart by
+  3e-2 of 1.1 over `t = 2`; a plane wave summed over the turns, which
+  has the symmetry, lost it by 6e-4 by `t = 0.25`; and the quarter-turned
+  reduced ball differed from the full one by 2e-8 at `t = 0.5`, from
+  roundoff, seeming to grow as `e^{25t}` while the asymmetry crossed from
+  the shells' edges to the seam.
+- `:turn`: the `x` shell where `x` and `y` have the same sign, the `y`
+  shell where they do not. It commutes with the quarter turn, and so with
+  the half turn and the mirror of `z`, but not with the mirrors of `x` and
+  `y`. With it the same runs agree to roundoff.
+
+A tie between `z` and `x` or `y` goes to `x` or `y` under both rules,
+which every symmetry the balls reduce by keeps. `SevenPatchBall(…;
+symmetry)` gives its `full` the rule the symmetry keeps, `:turn` under
+`:quarter` and `:quarter_bitant`, `:mirror` otherwise (both serve the
+half turn and the bitant), and refuses one given that does not. A
+reduced ball's own run does not depend on the rule, since its atlas
+folds every point into the reduced ball first, where the only ties left,
+`x = y > 0`, go to the `x` shell under both; it is the full ball, the
+reduced one's oracle, that needs the right one. **(open)** A rule-free
+alternative would interpolate a tie from both shells and average, which
+keeps every symmetry but needs TreeAMR to take two sources per ghost.
 
 ### Shell orientation
 
@@ -303,8 +345,8 @@ form, with `ξ` clamped into `p`'s closed box as TreeAMR's contract asks:
   back by whole quarter turns, then `ξ₁ = atan(y′, x′)/θ′` and
   `ξ₂ = (r − r0)/r′`. A point on a glue goes to the patch whose low face it
   is.
-- **The balls.** The cube if `max|x_k| ≤ Lc`. Otherwise `k` is the first
-  dimension of largest `|x_k|` and `s` its sign, and since a shell's `x`
+- **The balls.** The cube if `max|x_k| ≤ Lc`. Otherwise `k` is the
+  dimension of largest `|x_k|`, a tie broken by `ties`, and `s` its sign, and since a shell's `x`
   is parallel to its `f`, `c = x/|x_k|` gives the tangential coordinates.
   A blended shell then has `|x_k| = G Lc`, so
   `ρ = (|x_k|/Lc − 1)/(R/(Lc|c|) − 1)` and `η` inverts the grading; an
@@ -315,8 +357,9 @@ A point within eight roundings of an outer boundary (the annulus's walls,
 the sphere) is on it; anything farther out is `nothing`, which TreeAMR
 reads as beyond an outer face, the boundary hook's. A ghost across an
 outer face lies a spacing or more out, far beyond that tolerance. On a face
-between two patches either may be returned; the tests check that the
-patch returned holds the `ξ` in its closed box and maps it back to `x`.
+between the cube and a shell the cube is returned, between two shells the
+one [Ties between shells](#ties-between-shells) names; the tests check that
+the patch returned holds the `ξ` in its closed box and maps it back to `x`.
 
 ### Aligned coordinates
 

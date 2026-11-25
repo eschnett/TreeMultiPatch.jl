@@ -25,6 +25,16 @@ function symmetry_parts(name::Symbol)
         "the mirror z ≥ 0)"))
 end
 
+# The tie rule between the `x` and `y` shells that a reduction's group
+# keeps ("Ties between shells" in CODE.md): the turn's under a quarter
+# turn, the mirrors' otherwise. A half turn and the mirror `z → -z` keep
+# both. Without a symmetry, the mirrors'.
+function symmetry_ties(name)
+    name === nothing && return :mirror
+    _, turn = symmetry_parts(name)
+    return turn == 1 ? :turn : :mirror
+end
+
 # The axes whose positive side a reduction keeps: the mirrors', and the
 # quarter turn's x and y, or the half turn's x.
 cut_axes(mirrors, turn) =
@@ -45,6 +55,12 @@ and glues each turn's seam by turned entries, declaring the turn's plane
 `(1, 2)`; `chart_locate` folds any point of the full ball into the
 reduced one and reports the symmetry that carries it back. The cube's
 roots `n` must be even, so that its mid-planes are root boundaries.
+
+`full` is the ball a run of the reduced one is the restriction of. Its
+`ties` must be a rule the symmetry keeps, `:turn` under a quarter turn,
+`:mirror` under a mirror of `x` or `y` (`SevenPatchBall`), since a run of
+the full ball has only the symmetries of its rule; the constructors
+choose it, and refuse one given that does not.
 """
 struct SymmetricBall{T,L<:PatchLayout{3,T},NP} <: PatchLayout{3,T}
     full::L
@@ -57,6 +73,14 @@ end
 function symmetric(full::PatchLayout{3,T}, name::Symbol) where {T}
     mirrors, turn = symmetry_parts(name)
     cut = cut_axes(mirrors, turn)
+    ties = ball_ties(full)
+    ok = turn == 1 ? ties === :turn : !(mirrors[1] || mirrors[2]) || ties === :mirror
+    ok || throw(ArgumentError(
+        "symmetry = :$name is not a symmetry of $(layout_name(full)) with ties = " *
+        "$(repr(ties)): a point on |x| = |y| between two shells is interpolated from " *
+        "the one the rule picks, so the full ball keeps only the symmetries of its " *
+        "rule, and the reduced ball would not be its restriction; use ties = " *
+        "$(repr(symmetry_ties(name)))"))
     n = full.roots[1]
     iseven(n) || throw(ArgumentError(
         "symmetry = :$name cuts the cube at its mid-planes, which are root boundaries " *

@@ -115,13 +115,18 @@ end
 end
 
 # Where `x` lies relative to the cube `[-Lc, Lc]³`: inside it, with the
-# cube's `ξ`; or over its face `(k, s)`, `k` the first dimension of largest
+# cube's `ξ`; or over its face `(k, s)`, `k` the dimension of largest
 # `|x_k|`, with the face's tangential `ξ` and `c = x/|x_k|`, since a
-# shell's `x` is parallel to its `f = Lc c`.
-@inline function ball_face(x, Lc, n)
+# shell's `x` is parallel to its `f = Lc c`. A tie goes to `x` or `y`
+# before `z`, and between `x` and `y` by the ball's `ties` ("Ties between
+# shells" in CODE.md): to `x` (`turnties = false`), or to `x` where `x` and
+# `y` have the same sign and to `y` where not (`turnties = true`).
+@inline function ball_face(x, Lc, n, turnties::Bool)
     R = typeof(Lc)
     ax = abs.(x)
-    k = ax[1] >= ax[2] ? (ax[1] >= ax[3] ? 1 : 3) : (ax[2] >= ax[3] ? 2 : 3)
+    xwins = ax[1] > ax[2] ||
+            (ax[1] == ax[2] && (!turnties || signbit(x[1]) == signbit(x[2])))
+    k = xwins ? (ax[1] >= ax[3] ? 1 : 3) : (ax[2] >= ax[3] ? 2 : 3)
     if ax[k] <= Lc
         ξ = ntuple(j -> clamp((x[j] + Lc) / (2Lc / n), zero(R), convert(R, n)), Val(3))
         return true, ξ, k, 1, ax[k], ax[k]
@@ -150,8 +155,8 @@ end
 @inline inside_sphere(r2, R1) = r2 <= (R1 * (1 + 8 * eps(typeof(R1))))^2
 
 """
-    SevenPatchBall{T}(Lc, R1, roots; grading=0)
-    SevenPatchBall(Lc, R1, roots; grading=0)
+    SevenPatchBall{T}(Lc, R1, roots; grading=0, ties=:mirror)
+    SevenPatchBall(Lc, R1, roots; grading=0, ties, symmetry=nothing)
     SevenPatchBall{T}(ball)
 
 The ball `|x| ≤ R1` as seven patches, with `roots = (n, m)`:
@@ -185,14 +190,29 @@ shells' radial elements widen outward by one ratio from each to the next,
 the outermost `e^α` times as wide as the innermost. `R1 > √3 Lc`, so
 that the cube's corners lie inside the sphere and the map is one to one.
 `SevenPatchBall{T}(ball)` is the same ball with its parameters in `T`.
+
+`ties` says which shell `chart_locate` gives a point on the plane
+`|x| = |y|` between the `x` and `y` shells: `:mirror`, the `x` shell,
+which keeps the ball's mirror symmetries in its discretization, or
+`:turn`, the `x` shell where `x` and `y` have the same sign and the `y`
+shell where not, which keeps its turns about `z`. No rule keeps both,
+since the mirror `x ↔ y` swaps the two shells at a tie. A ghost
+interpolated at such a point reads one shell's copy of the face, and the
+copies differ by the truncation error, so a run of the ball has exactly
+the symmetries its `ties` keeps ("Ties between shells" in `CODE.md`).
+Without `symmetry` the default is `:mirror`; with one (`SymmetricBall`)
+the full ball takes the rule its symmetry keeps, `:turn` under a quarter
+turn and `:mirror` otherwise, and refuses one that does not.
 """
 struct SevenPatchBall{T} <: PatchLayout{3,T}
     Lc::T
     R1::T
     roots::NTuple{2,Int}
     grading::T                   # α
+    turnties::Bool               # ties = :turn
 
-    function SevenPatchBall{T}(Lc, R1, roots::NTuple{2,Integer}; grading=0) where {T}
+    function SevenPatchBall{T}(Lc, R1, roots::NTuple{2,Integer}; grading=0,
+                               ties=:mirror) where {T}
         0 < Lc || throw(ArgumentError(
             "the cube's half-width Lc must be positive, got $Lc"))
         R1 > sqrt(3) * Lc || throw(ArgumentError(
@@ -203,23 +223,35 @@ struct SevenPatchBall{T} <: PatchLayout{3,T}
             "dimension, got $roots"))
         isfinite(grading) || throw(ArgumentError(
             "the shells' radial grading must be finite, got $grading"))
-        return new{T}(T(Lc), T(R1), Int.(roots), T(grading))
+        return new{T}(T(Lc), T(R1), Int.(roots), T(grading), turn_ties(ties))
     end
 end
 
-SevenPatchBall{T}(Lc, R1, roots; grading=0) where {T} =
-    SevenPatchBall{T}(Lc, R1, Tuple(roots); grading=grading)
+SevenPatchBall{T}(Lc, R1, roots; grading=0, ties=:mirror) where {T} =
+    SevenPatchBall{T}(Lc, R1, Tuple(roots); grading=grading, ties=ties)
 SevenPatchBall{T}(b::SevenPatchBall) where {T} =
-    SevenPatchBall{T}(b.Lc, b.R1, b.roots; grading=b.grading)
-function SevenPatchBall(Lc, R1, roots; grading=0, symmetry=nothing)
+    SevenPatchBall{T}(b.Lc, b.R1, b.roots; grading=b.grading, ties=ball_ties(b))
+function SevenPatchBall(Lc, R1, roots; grading=0, symmetry=nothing,
+                        ties=symmetry_ties(symmetry))
     b = SevenPatchBall{float(promote_type(typeof(Lc), typeof(R1)))}(Lc, R1, roots;
-                                                                    grading=grading)
+                                                                    grading=grading,
+                                                                    ties=ties)
     return symmetry === nothing ? b : symmetric(b, symmetry)
 end
 
+# `ties` as the ball stores it, `isbits`, and back.
+function turn_ties(ties)
+    ties in (:mirror, :turn) || throw(ArgumentError(
+        "ties = $(repr(ties)) is neither :mirror (a point on |x| = |y| goes to the x " *
+        "shell, keeping the mirrors) nor :turn (to the x shell where x and y have the " *
+        "same sign, keeping the turns about z)"))
+    return ties === :turn
+end
+ball_ties(b) = b.turnties ? :turn : :mirror
+
 """
-    ThirteenPatchBall{T}(Lc, Rm, R1, roots)
-    ThirteenPatchBall(Lc, Rm, R1, roots)
+    ThirteenPatchBall{T}(Lc, Rm, R1, roots; ties=:mirror)
+    ThirteenPatchBall(Lc, Rm, R1, roots; ties, symmetry=nothing)
     ThirteenPatchBall{T}(ball)
 
 The ball `|x| ≤ R1` as thirteen patches, with `roots = (n, m, m′)`: the
@@ -253,14 +285,17 @@ face. On an outer shell `√g = r² r′ ⋅ (2/n)² (1 + c_a² + c_b²)^{-3/2}`
 `r′ = (R1 - Rm)/m′`, a radial factor times an angular one that is the
 same on all six ([`factored_volume`](@ref)). `Rm > √3 Lc` and `R1 > Rm`.
 `ThirteenPatchBall{T}(ball)` is the same ball with its parameters in `T`.
+`ties` is [`SevenPatchBall`](@ref)'s.
 """
 struct ThirteenPatchBall{T} <: PatchLayout{3,T}
     Lc::T
     Rm::T
     R1::T
     roots::NTuple{3,Int}
+    turnties::Bool               # ties = :turn
 
-    function ThirteenPatchBall{T}(Lc, Rm, R1, roots::NTuple{3,Integer}) where {T}
+    function ThirteenPatchBall{T}(Lc, Rm, R1, roots::NTuple{3,Integer};
+                                  ties=:mirror) where {T}
         0 < Lc || throw(ArgumentError(
             "the cube's half-width Lc must be positive, got $Lc"))
         Rm > sqrt(3) * Lc || throw(ArgumentError(
@@ -272,21 +307,22 @@ struct ThirteenPatchBall{T} <: PatchLayout{3,T}
         all(>(0), roots) || throw(ArgumentError(
             "every patch of the ball needs a positive number of roots along each " *
             "dimension, got $roots"))
-        return new{T}(T(Lc), T(Rm), T(R1), Int.(roots))
+        return new{T}(T(Lc), T(Rm), T(R1), Int.(roots), turn_ties(ties))
     end
 end
 
-function ThirteenPatchBall{T}(Lc, Rm, R1, roots) where {T}
+function ThirteenPatchBall{T}(Lc, Rm, R1, roots; ties=:mirror) where {T}
     length(roots) == 3 || throw(ArgumentError(
         "the thirteen-patch ball takes roots = (n, m, m′), the cube's per side and the " *
         "inner and outer shells' radial ones, got $(repr(roots))"))
-    return ThirteenPatchBall{T}(Lc, Rm, R1, Tuple(roots))
+    return ThirteenPatchBall{T}(Lc, Rm, R1, Tuple(roots); ties=ties)
 end
 ThirteenPatchBall{T}(b::ThirteenPatchBall) where {T} =
-    ThirteenPatchBall{T}(b.Lc, b.Rm, b.R1, b.roots)
-function ThirteenPatchBall(Lc, Rm, R1, roots; symmetry=nothing)
+    ThirteenPatchBall{T}(b.Lc, b.Rm, b.R1, b.roots; ties=ball_ties(b))
+function ThirteenPatchBall(Lc, Rm, R1, roots; symmetry=nothing,
+                           ties=symmetry_ties(symmetry))
     b = ThirteenPatchBall{float(promote_type(typeof(Lc), typeof(Rm), typeof(R1)))}(
-        Lc, Rm, R1, roots)
+        Lc, Rm, R1, roots; ties=ties)
     return symmetry === nothing ? b : symmetric(b, symmetry)
 end
 
@@ -364,14 +400,15 @@ end
 
 # The cube if `x` is in it; otherwise the shell over the face `x` is
 # parallel to, whose tangential coordinates `c = x/|x_k|` gives, and the
-# radial one from `|x|`. A point on a face between two patches goes to
-# either, a point within a few roundings of the sphere to the sphere.
+# radial one from `|x|`. A point on the cube's face goes to the cube, one
+# on a face between two shells to the shell `ball_face`'s tie rule picks,
+# and one within a few roundings of the sphere to the sphere.
 @inline function TreeAMR.chart_locate(b::SevenPatchBall{T}, y) where {T}
     R = promote_type(T, typeof(y[1]), typeof(y[2]), typeof(y[3]))
     x = ntuple(i -> convert(R, y[i]), Val(3))
     n, m = b.roots
     Lc, R1 = convert(R, b.Lc), convert(R, b.R1)
-    incube, ξ, k, s, axk, nc = ball_face(x, Lc, n)
+    incube, ξ, k, s, axk, nc = ball_face(x, Lc, n, b.turnties)
     incube && return ξ, 1
     inside_sphere(x[1]^2 + x[2]^2 + x[3]^2, R1) || return nothing
     ξk = blended_radial(axk, nc, Lc, m, R1, convert(R, b.grading))
@@ -383,7 +420,7 @@ end
     x = ntuple(i -> convert(R, y[i]), Val(3))
     n, m, m′ = b.roots
     Lc, Rm, R1 = convert(R, b.Lc), convert(R, b.Rm), convert(R, b.R1)
-    incube, ξ, k, s, axk, nc = ball_face(x, Lc, n)
+    incube, ξ, k, s, axk, nc = ball_face(x, Lc, n, b.turnties)
     incube && return ξ, 1
     r2 = x[1]^2 + x[2]^2 + x[3]^2
     if r2 <= Rm^2

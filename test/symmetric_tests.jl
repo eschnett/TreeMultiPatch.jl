@@ -89,6 +89,50 @@ end
     @test worst < 1e-12
 end
 
+@testset "A point between the x and y shells goes where the ball's ties say: $name" for
+        (name, make) in [
+            "seven-patch" => (; kw...) -> SevenPatchBall(1, 2.5, (2, 2); kw...),
+            "thirteen-patch" => (; kw...) -> ThirteenPatchBall(0.75, 2, 4, (4, 2, 3); kw...)]
+    # On the plane |x| = |y| the x and the y shell both hold the point, and
+    # a ghost there is interpolated from the one the atlas names, whose copy
+    # of the face differs from the other's by the truncation error. So a
+    # run of the ball has only the symmetries of the rule: `:mirror` must
+    # commute with the mirrors of x and y, `:turn` with the quarter turn
+    # about z, or a reduced ball is not the full one restricted (TreeWave's
+    # M21 runs found the quarter turn's 1e-4 apart).
+    shell(b, x) = TreeMultiPatch.ball_shell(b, chart_locate(b, x)[2])[1:2]
+    turned((k, s)) = k == 1 ? (2, s) : k == 2 ? (1, -s) : (k, s)
+    rng = Xoshiro(3)
+    for ties in (:mirror, :turn)
+        b = make(; ties=ties)
+        @test isbits(b)
+        @test TreeMultiPatch.ball_ties(b) === ties
+        @test TreeMultiPatch.ball_ties(typeof(b).name.wrapper{Float32}(b)) === ties
+        for _ in 1:50
+            a = 1.05 + 0.3rand(rng)      # past both cubes, inside both spheres
+            sx, sy = rand(rng, (-1, 1)), rand(rng, (-1, 1))
+            x = (sx * a, sy * a, (2rand(rng) - 1) * a)
+            k, s = shell(b, x)
+            @test k == (ties === :mirror || sx == sy ? 1 : 2)
+            @test s == (k == 1 ? sx : sy)
+            if ties === :turn
+                @test shell(b, (-x[2], x[1], x[3])) == turned((k, s))
+            else
+                @test shell(b, (-x[1], x[2], x[3])) == (k, -s)
+                @test shell(b, (x[1], -x[2], x[3])) == (k, k == 2 ? -s : s)
+            end
+        end
+    end
+    @test make().turnties == false
+    @test make(; symmetry=:quarter).full.turnties
+    @test make(; symmetry=:quarter_bitant).full.turnties
+    @test !make(; symmetry=:octant).full.turnties
+    @test make(; symmetry=:half, ties=:turn).full.turnties
+    @test_throws "not a symmetry" make(; symmetry=:quarter, ties=:mirror)
+    @test_throws "not a symmetry" make(; symmetry=:quadrant, ties=:turn)
+    @test_throws "neither :mirror" make(; ties=:diagonal)
+end
+
 @testset "√g integrates to a reduced ball's share of the volume: $name, $sym" for
         (name, make) in SYMMETRIC_BALLS, sym in SYMMETRY_NAMES
     # The reduced patches' boxes are the kept part of the full ball, no more
@@ -108,8 +152,8 @@ end
     # folded through the atlas, the turned copies, the corners at the turn's
     # axis and the half turn's slab must all give the full ball's values, to
     # rounding.
-    full = SevenPatchBall(1.0, 3.0, (2, 1))
     b = SevenPatchBall(1.0, 3.0, (2, 1); symmetry=sym)
+    full = b.full
     mirrors, turn = TreeMultiPatch.symmetry_parts(sym)
     s(x) = cos(x[1]) + cos(x[2]) + cos(1.3x[3]) + x[1]^2 * x[2]^2
     ops = Operators(prolongation=4, restriction=4, glue=4)

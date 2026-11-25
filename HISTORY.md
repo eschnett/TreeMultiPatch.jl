@@ -124,3 +124,18 @@ interpolated ghosts on the reduced seven-patch ball equal to the full
 ball's to 1e-12. The suite, 111,456 assertions with these, against
 TreeAMR's M21 checkout.
 
+*Ties between shells* (2026-11-25, found by TreeWave's M21 runs). The
+seven-patch ball reduced by a quarter turn drifted from the full ball,
+from roundoff at `t = 0.05` to 2e-8 at `t = 0.5`, seemingly exponential,
+largest where the `+z` shell's seam meets its glue to the `+y` shell; the
+octant and the half turn agreed to roundoff. The cause was the full ball:
+`ball_face` broke a tie `|x| = |y|` toward the `x` shell, which commutes
+with the mirrors but not with the turn, and the shells' diagonal corner
+ghosts lie on such ties, so the full ball's run was not symmetric under
+the turn (random data and its turned image 3e-2 apart after `t = 2`); the
+"growth" was that asymmetry crossing from the shells' edges to the seam.
+No rule keeps both the mirrors and the turn, so the balls took `ties`,
+`:mirror` (the old rule, the default, bit for bit) or `:turn`, and a
+reduced ball's `full` the rule its symmetry keeps; the constructors refuse
+the other. Averaging the two shells at a tie, which would need TreeAMR
+to take two sources per ghost, was left open.
