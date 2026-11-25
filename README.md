@@ -1,5 +1,7 @@
 # TreeMultiPatch.jl
 
+[![CI](https://github.com/eschnett/TreeMultiPatch.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/eschnett/TreeMultiPatch.jl/actions/workflows/CI.yml)
+
 `TreeMultiPatch` holds the multi-patch layouts that applications of
 [TreeAMR](https://github.com/eschnett/TreeAMR.jl) share: a domain cut into
 logical boxes, *patches*, glued at their faces, with the maps from each
@@ -41,7 +43,14 @@ and defined past each patch's box, where a ghost across a glue sits.
 
 ## Installation
 
-The package is not registered. From a checkout:
+The package is not registered yet. Add it from GitHub:
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/eschnett/TreeMultiPatch.jl")
+```
+
+or run its tests from a checkout:
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
@@ -68,8 +77,9 @@ chart_aligned(ball, 9, 11)                # (false, true, false): the radius
 
 Version 0.1, unregistered: step 1 of TreeAMR's milestone M20. The layouts
 moved here from TreeWaveOLDG's `src/geometry.jl`, with the balls' shells
-reoriented so that every radial coordinate runs outward. TreeWaveOLDG and
-TreeWave do not use it yet. See [PLAN.md](PLAN.md).
+reoriented so that every radial coordinate runs outward. TreeWave's M20
+branch runs the annulus and the seven-patch ball on it; TreeWaveOLDG does
+not use it yet. See [PLAN.md](PLAN.md).
 
 ## Design
 

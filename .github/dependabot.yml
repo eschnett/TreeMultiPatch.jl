@@ -1,0 +1,19 @@
+# Only the actions are watched, because only the actions go stale in
+# silence. A pinned major keeps running long after a new one ships and
+# says nothing about it, until one day it is deprecated off the runners.
+# Julia is not covered: Dependabot has no Pkg ecosystem, and the
+# `[compat]` bound on TreeAMR is a range over its 0.2 series, so a new
+# TreeAMR patch is picked up on the next resolve with nothing to bump.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    # One pull request a month for all of them, rather than one per
+    # action: these move together and are reviewed together.
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: CI

@@ -1,0 +1,101 @@
+name: CI
+
+# Two tiers, the same in every Tree* repository. A pull request runs the
+# Linux cells only, uninstrumented: the full suite has already run on the
+# author's machine (macOS, arm64), so what CI adds there is x86-64 Linux,
+# a clean environment and bounds checks. A push to `main`, the weekly
+# schedule and a manual dispatch run the whole matrix, macOS and coverage
+# included. Markdown-only changes run nothing, since no test reads them.
+# Tags are not tested: TagBot tags a commit that has already passed on
+# `main`.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md"]
+  pull_request:
+    paths-ignore: ["**.md"]
+  # Weekly, for what changes without a push here: the registry, and
+  # TreeAMR's releases. The Tree* repositories are staggered by 20
+  # minutes so that their macOS cells do not queue behind each other
+  # (five run at once per account); this one takes the slot after
+  # TreeWaveOLDG's.
+  schedule:
+    - cron: "40 7 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.threads }} thread(s)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Julia 1.13 is the floor of every Tree* package and the only
+        # version tested.
+        version: ["1.13"]
+        # macOS only off pull requests (see `on:` above).
+        os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-latest"]' || '["ubuntu-latest", "macOS-latest"]') }}
+        # `threads` is a matrix key, so that the threaded entry below adds
+        # a cell rather than merging into the serial Linux one. The device
+        # test launches its kernels on KernelAbstractions' CPU backend,
+        # which spreads a launch over the threads there are.
+        threads: [1]
+        include:
+          - version: "1.13"
+            os: ubuntu-latest
+            threads: 4
+    # Coverage on one cell, macOS at one thread, and never on a pull
+    # request. Not a Linux cell: `--code-coverage` together with
+    # `--check-bounds=yes` miscompiles on GitHub's AVX-512 Zen 4/5 runners
+    # under Julia 1.13 (TreeGeneralizedHarmonic's CI.yml has the probes).
+    env:
+      COVERAGE: ${{ matrix.os == 'macOS-latest' && matrix.threads == 1 && github.event_name != 'pull_request' }}
+      # Precompiled code is built for one fixed CPU per OS, not the
+      # runner's own, so that a cache saved on one runner loads on the
+      # next: GitHub's runners of one label have different CPUs.
+      # `apple-m1` is the oldest Apple Silicon; the names are per
+      # architecture (`x86-64-v3` is an error on arm64).
+      JULIA_CPU_TARGET: ${{ matrix.os == 'ubuntu-latest' && 'x86-64-v3' || 'apple-m1' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: ${{ matrix.version }}
+      # Which CPU this runner has, so that a cache that was restored and
+      # then rebuilt anyway can be matched against the runner that saved it.
+      - name: Show the runner's CPU
+        run: |
+          if command -v lscpu >/dev/null; then
+            lscpu | grep -E '^(Model name|Flags)' | cut -c1-200
+          else
+            sysctl -n machdep.cpu.brand_string
+          fi
+      # The CPU target is part of the key: Julia does not refuse a cached
+      # file built for another target as long as this runner can run it.
+      - uses: julia-actions/cache@v3
+        with:
+          cache-name: julia-cache;workflow=${{ github.workflow }};job=${{ github.job }};cpu=${{ env.JULIA_CPU_TARGET }}
+      - uses: julia-actions/julia-buildpkg@v1
+      # `check_bounds: yes` is the action's default, stated so that a
+      # change of default does not quietly drop the checks; the package
+      # has no `@inbounds`, so they cost little here.
+      - uses: julia-actions/julia-runtest@v1
+        with:
+          check_bounds: 'yes'
+          coverage: ${{ env.COVERAGE }}
+        env:
+          JULIA_NUM_THREADS: ${{ matrix.threads }}
+      - uses: julia-actions/julia-processcoverage@v1
+        if: env.COVERAGE == 'true'
+      - uses: codecov/codecov-action@v7
+        if: env.COVERAGE == 'true'
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # A Codecov outage, or the token not set yet, should not turn a
+          # green test run red.
+          fail_ci_if_error: false

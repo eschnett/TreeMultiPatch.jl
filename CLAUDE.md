@@ -70,8 +70,15 @@ TREEMULTIPATCH_TEST_BACKEND=metal julia --project=<env> test/runtests.jl device_
 
 ## Repository facts
 
-- Unregistered, no remote yet. Creating one, pushing and registering are
-  Erik's.
+- Remote: `github.com/eschnett/TreeMultiPatch.jl`, branch `main`.
+  Unregistered; registering is Erik's (M3 in `PLAN.md`).
+- CI (`.github/workflows/CI.yml`) tests on Julia 1.13 in the two tiers
+  of every Tree* repository: a pull request runs the Linux cells only,
+  serial and at four threads, without coverage; macOS and coverage
+  (Codecov, through the `CODECOV_TOKEN` secret) run on `main`, weekly
+  and on dispatch. So run the suite locally before opening a pull
+  request. TagBot (`TagBot.yml`) tags each registered version and needs
+  a write deploy key behind the `DOCUMENTER_KEY` secret, as in TreeAMR.
 - `Manifest.toml` files are gitignored; `test/Project.toml` locates the
   package through `[sources]`.
 - Julia 1.13, the floor of every Tree* package.
