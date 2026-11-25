@@ -53,7 +53,7 @@ TREEMULTIPATCH_TEST_BACKEND=metal julia --project=<env> test/runtests.jl device_
 ## Rules and sharp edges
 
 - **TreeAMR's exports and public `chart_*` only**, `[compat] TreeAMR =
-  "0.2"`. Needing an internal means it belongs in TreeAMR, exported.
+  "0.2.12"`, the first release with `chart_aligned`. Needing an internal means it belongs in TreeAMR, exported.
 - **Everything at a point runs in a kernel**: `isbits` layouts, no
   allocation, concrete inferred types. No `Base.setindex` at a run-time
   index, no variable both captured by a closure and reassigned; the

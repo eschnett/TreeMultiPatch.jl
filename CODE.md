@@ -39,8 +39,10 @@ layout costs no TreeAMR release (TreeAMR's `PLAN.md`, M20, "Why a package
 and not TreeAMR").
 
 Dependencies: TreeAMR, through its exports and its public `chart_*`
-functions only, with `[compat] TreeAMR = "0.2"`, an ordinary range: a
-need for an internal would mean the thing belongs in TreeAMR, exported.
+functions only, with `[compat] TreeAMR = "0.2.12"`, an ordinary range
+from the first release that declares `chart_aligned` (below, under
+[The atlas](#the-atlas)): a need for an internal would mean the thing
+belongs in TreeAMR, exported.
 MultiFloats and ForwardDiff are weak dependencies, for the extensions
 under [Number types](#number-types).
 
@@ -287,12 +289,11 @@ contract is TreeAMR's (its `src/glue.jl` on the M20 branch). Declared:
   at every glue.
 - `p == q` is aligned along every dimension.
 
-Where the TreeAMR in use defines `chart_aligned` (the M20 branch, a later
-release), `chart_aligned` here *is* `TreeAMR.chart_aligned`, imported when
-the package is compiled, and these are its methods, which TreeAMR's glue
-schedule finds with `hasmethod`; with TreeAMR 0.2.10, which does not have
-it, it is this package's own function of the same contract. A test checks
-which of the two holds.
+`chart_aligned` here *is* `TreeAMR.chart_aligned`, imported, and these
+are its methods, which TreeAMR's glue schedule finds with `hasmethod`. A
+function of this package's own with the same contract would compile and
+pass its own tests, and the schedule would never see it; a test checks
+that the two are one.
 
 ## Patch properties
 
@@ -372,7 +373,7 @@ half a root past a box, and Gauss–Legendre quadrature.
 | File | What it asserts |
 |---|---|
 | `map_tests.jl` | `isbits`; the Jacobian to 1e-14 and the Hessian to 1e-13 against ForwardDiff, half a root past every box; the frame against `|det J| J⁻¹`; `Σ_d ∂_d S[d] = 0` to 1e-14 of `∂S`; `Float64x2` against `BigFloat` to 1e-29, with ForwardDiff over `Float64x2`; the volume factors; `logical_speed` against `eigvals`; `affine_map`; outward radial axes; the constructors' refusals |
-| `atlas_tests.jl` | `chart_locate` inverts `chart_map` inside, on faces, edges and corners, and past the boxes; a point just past a glued face is in the patch the glue names; outside points are `nothing`; every declared alignment to 1e-12 of a spacing at the ghosts three spacings past each box, at 6 and 8 points per root, vertex- and cell-centered, every declared pair reached; an undeclared coordinate off the nodes somewhere; the declarations named in TreeAMR's plan; `chart_aligned` is TreeAMR's where TreeAMR has it |
+| `atlas_tests.jl` | `chart_locate` inverts `chart_map` inside, on faces, edges and corners, and past the boxes; a point just past a glued face is in the patch the glue names; outside points are `nothing`; every declared alignment to 1e-12 of a spacing at the ghosts three spacings past each box, at 6 and 8 points per root, vertex- and cell-centered, every declared pair reached; an undeclared coordinate off the nodes somewhere; the declarations named in TreeAMR's plan; `chart_aligned` is TreeAMR's |
 | `forest_tests.jl` | each forest builds, uniform and refined, and passes its check; keywords pass through, `glue` and `extents` refused; the check refuses other layouts, roots, a cut ring and TreeWaveOLDG's inward glue, at the root level and refined; a glued face is one surface under both maps; the outer boundary is the outermost shells' high faces |
 | `volume_tests.jl` | `√g` integrates to `π(r1² − r0²)` and `4πR³/3` to 1e-13 and 1e-12, the cube to `(2Lc)³`, each layer's shells alike |
 | `device_tests.jl` | every map, `chart_locate` included, in a KernelAbstractions kernel against the host; every map infers a concrete type in `Float32` |

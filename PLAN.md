@@ -29,9 +29,7 @@ owes them, if they ask:
   `physical_coordinates` by `TreeAMR.chart_map`, and recomputes its
   flux coefficients and `jacobian_factor` from the frame and the volume
   factors; the three shells over the cube's low faces now run outward
-  (CODE.md, "Departures from TreeWaveOLDG");
-- `chart_aligned` as a method of `TreeAMR.chart_aligned`, which happens
-  when the package is compiled against a TreeAMR that has it.
+  (CODE.md, "Departures from TreeWaveOLDG").
 
 *Done when* TreeWaveOLDG's convergence tables and energies on the
 annulus and both balls are what they were, and TreeWave's annulus and
@@ -39,9 +37,9 @@ seven-patch ball run on these layouts.
 
 ### M3 — Release
 
-Register TreeMultiPatch (Erik's step), after the TreeAMR release that
-has `chart_aligned` public, with `[compat] TreeAMR` raised to that
-version if the methods must extend it.
+Register TreeMultiPatch (Erik's step). Its `[compat] TreeAMR` is already
+`"0.2.12"`, the release that declares `chart_aligned`
+([HISTORY.md](HISTORY.md#the-atlas)).
 
 *Done when* TreeMultiPatch is registered and TreeWaveOLDG and TreeWave
 resolve it.

@@ -201,13 +201,9 @@ end
     @test chart_aligned(PolarAnnulus(1, 2, (2, 1)), 1, 2) == (true, true)
 end
 
-@testset "chart_aligned is TreeAMR's own function where TreeAMR has one" begin
+@testset "chart_aligned is TreeAMR's own function" begin
     # A declaration that TreeAMR's glue schedule would not see, because it
     # is a method of another function than the one TreeAMR calls.
-    if isdefined(TreeAMR, :chart_aligned)
-        @test chart_aligned === TreeAMR.chart_aligned
-    else
-        @test parentmodule(chart_aligned) === TreeMultiPatch
-    end
+    @test chart_aligned === TreeAMR.chart_aligned
     @test hasmethod(chart_aligned, Tuple{ThirteenPatchBall{Float64},Int,Int})
 end

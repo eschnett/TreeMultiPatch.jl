@@ -78,6 +78,15 @@ that contract, and imports TreeAMR's instead when `isdefined(TreeAMR,
 against the release that has it, the methods are TreeAMR's with no
 change here.
 
+**The floor raised to 0.2.12** (2026-11-25, Erik's decision, before
+registration). `[compat] TreeAMR = "0.2"` admitted 0.2.0 to 0.2.8, which
+do not have the public `chart_*` functions (0.2.9 made them public), and
+0.2.9 to 0.2.11, whose lack of `chart_aligned` left the methods on a
+function of this package that no glue schedule calls. TreeAMR 0.2.12,
+registered that day, declares it; the floor is now 0.2.12, and the
+conditional import and the test's branch for a TreeAMR without it are
+gone.
+
 ## Milestones
 
 ### M1 — The layouts, their maps and atlases

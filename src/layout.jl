@@ -10,13 +10,9 @@
 # frame (`√g` and the area vectors) and the logical speed follow from the
 # Jacobian here. See "Layouts" and "The maps" in CODE.md.
 
-if isdefined(TreeAMR, :chart_aligned)
-    # A TreeAMR that has the declaration (M20): the methods below extend
-    # its function, which its glue schedule calls.
-    import TreeAMR: chart_aligned
-else
-    function chart_aligned end
-end
+# TreeAMR's declaration (0.2.12, its M20): the methods below extend its
+# function, which its glue schedule calls.
+import TreeAMR: chart_aligned
 
 @doc """
     chart_aligned(atlas, p, q) -> NTuple{D,Bool}
