@@ -76,3 +76,18 @@ function gauss_legendre(n)
     end
     return x, w
 end
+
+# `∫ √g dξ` over patch `p`, `nq` Gauss points per root and dimension.
+function patch_volume(layout, p, nq)
+    D = dimension(layout)
+    x, w = gauss_legendre(nq)
+    n = patch_roots(layout, p)
+    # Pairwise, a root at a time, so that the sum's rounding stays below
+    # what the test asserts.
+    return sum(vec(map(CartesianIndices(ntuple(d -> 0:(n[d] - 1), D))) do root
+        sum(vec(map(CartesianIndices(ntuple(_ -> nq, D))) do q
+            ξ = ntuple(d -> root[d] + (x[q[d]] + 1) / 2, D)
+            prod(d -> w[q[d]] / 2, 1:D) * volume_element(layout, ξ, p)
+        end))
+    end))
+end

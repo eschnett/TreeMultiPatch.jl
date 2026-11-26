@@ -8,6 +8,7 @@
 - [The atlas](#the-atlas)
 - [Milestones](#milestones)
   - [M1 — The layouts, their maps and atlases](#m1--the-layouts-their-maps-and-atlases)
+  - [M21 — Symmetric balls (TreeAMR's M21 step 5)](#m21--symmetric-balls-treeamrs-m21-step-5)
 
 ## Origin
 
@@ -103,3 +104,38 @@ edges and corners, and past the boxes; every declared alignment holds to
 integrates to each volume to 1e-12; each forest builds, uniform and
 refined, and passes its check; the maps run in a kernel on the CPU and,
 in `Float32`, on Metal (Metal 1.12.1). The suite takes about 35 s.
+
+### M21 — Symmetric balls (TreeAMR's M21 step 5)
+
+2026-11-25. `SymmetricBall`, built by the balls' `symmetry` keyword:
+seven reductions of both balls, as sub-boxes of the full ball's patches
+with the full maps, mirror faces at the mirror cuts and turned glue at
+the turns' seams, derived from the maps. Starting it showed that a point
+in a removed shell's wedge lies past no kept patch's cut within reach of
+its map, so the logical fold of TreeAMR's design could not reach it; Erik
+widened TreeAMR's atlas contract so that `chart_locate` may return the
+image's position with the symmetry, which this atlas does for every
+point. Measured, for every symmetry of the graded seven-patch and the
+thirteen-patch ball: glued faces one surface, or the turn's image, to
+1e-12; every point of the full ball folded and carried back to 1e-12; the
+kept share of the volume to 1e-11 relative (8 Gauss points per root left
+7e-11 on the graded ball, 12 as `volume_tests.jl` uses); TreeAMR's
+interpolated ghosts on the reduced seven-patch ball equal to the full
+ball's to 1e-12. The suite, 111,456 assertions with these, against
+TreeAMR's M21 checkout.
+
+*Ties between shells* (2026-11-25, found by TreeWave's M21 runs). The
+seven-patch ball reduced by a quarter turn drifted from the full ball,
+from roundoff at `t = 0.05` to 2e-8 at `t = 0.5`, seemingly exponential,
+largest where the `+z` shell's seam meets its glue to the `+y` shell; the
+octant and the half turn agreed to roundoff. The cause was the full ball:
+`ball_face` broke a tie `|x| = |y|` toward the `x` shell, which commutes
+with the mirrors but not with the turn, and the shells' diagonal corner
+ghosts lie on such ties, so the full ball's run was not symmetric under
+the turn (random data and its turned image 3e-2 apart after `t = 2`); the
+"growth" was that asymmetry crossing from the shells' edges to the seam.
+No rule keeps both the mirrors and the turn, so the balls took `ties`,
+`:mirror` (the old rule, the default, bit for bit) or `:turn`, and a
+reduced ball's `full` the rule its symmetry keeps; the constructors refuse
+the other. Averaging the two shells at a tie, which would need TreeAMR
+to take two sources per ghost, was left open.

@@ -11,3 +11,4 @@ TreeMultiPatch = "7cd1219e-1b18-4d4d-a931-ceef91256e6d"
 
 [sources]
 TreeMultiPatch = {path = ".."}
+TreeAMR = {path = "../../TreeAMR/.claude/worktrees/m8-step-4-57032f"}
