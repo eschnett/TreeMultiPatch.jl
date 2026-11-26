@@ -9,5 +9,9 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TreeAMR = "91bc416d-811c-44c1-9bc4-b9c8bbdbbd08"
 TreeMultiPatch = "7cd1219e-1b18-4d4d-a931-ceef91256e6d"
 
+# TreeAMR 0.3 (M22, closed blocks) is on the branch m22 of the TreeAMR
+# checkout beside this one, not yet released: take it from there. Replace
+# this by the release once there is one.
 [sources]
+TreeAMR = {path = "../../TreeAMR"}
 TreeMultiPatch = {path = ".."}
