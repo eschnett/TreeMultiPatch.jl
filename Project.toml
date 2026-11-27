@@ -6,12 +6,6 @@ authors = ["Erik Schnetter <schnetter@gmail.com>"]
 [deps]
 TreeAMR = "91bc416d-811c-44c1-9bc4-b9c8bbdbbd08"
 
-# TreeAMR 0.3 (M22, closed blocks) is on the branch m22 of the TreeAMR
-# checkout beside this one, not yet released: take it from there. Replace
-# this by the release once there is one.
-[sources]
-TreeAMR = {path = "../TreeAMR"}
-
 [weakdeps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 MultiFloats = "bdf0d083-296b-4888-a5b6-7498122e68a5"
